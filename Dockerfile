@@ -97,13 +97,15 @@ RUN apt update \
     curl \
     jq \
     libssl-dev \
-    && LIBTORRENT_ASSETS=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent/releases" | jq '.[] | select(.prerelease==false) | select(.target_commitish=="RC_1_2") | .assets_url' | head -n 1 | tr -d '"') \
-    && LIBTORRENT_DOWNLOAD_URL=$(curl -sX GET ${LIBTORRENT_ASSETS} | jq '.[0] .browser_download_url' | tr -d '"') \
-    && LIBTORRENT_NAME=$(curl -sX GET ${LIBTORRENT_ASSETS} | jq '.[0] .name' | tr -d '"') \
+    && LIBTORRENT_DEFAULT_BRANCH=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent" | jq -r '.default_branch') \
+    && LIBTORRENT_ASSETS_URL=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent/releases" | jq -r --arg branch "$LIBTORRENT_DEFAULT_BRANCH" '[.[] | select(.prerelease == false and .target_commitish == $branch)] | first | .assets_url') \
+    && LIBTORRENT_ASSET=$(curl -sX GET "${LIBTORRENT_ASSETS_URL}" | jq -r '[.[] | select(.name | test("\\.tar\\.gz$"))] | first') \
+    && LIBTORRENT_DOWNLOAD_URL=$(echo "${LIBTORRENT_ASSET}" | jq -r '.browser_download_url') \
+    && LIBTORRENT_NAME=$(echo "${LIBTORRENT_ASSET}" | jq -r '.name') \
     && curl -o /opt/${LIBTORRENT_NAME} -L ${LIBTORRENT_DOWNLOAD_URL} \
     && tar -xzf /opt/${LIBTORRENT_NAME} \
     && rm /opt/${LIBTORRENT_NAME} \
-    && cd /opt/libtorrent-rasterbar* \
+    && cd /opt/libtorrent-* \
     && cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_CXX_STANDARD=17 \
     && cmake --build build --parallel $(nproc) \
     && cmake --install build \
