@@ -7,7 +7,9 @@ fi
 chown -R ${PUID}:${PGID} /config/qBittorrent
 
 # Set the rights on the /downloads folder
-find /downloads -not -user ${PUID} -execdir chown ${PUID}:${PGID} {} \+
+if [[ -z "${SKIP_CHOWN_DOWNLOADS}" ]]; then
+	find /downloads -not -user ${PUID} -execdir chown ${PUID}:${PGID} {} \+
+fi
 
 # Check if qBittorrent.conf exists, if not, copy the template over
 if [ ! -e /config/qBittorrent/config/qBittorrent.conf ]; then

@@ -69,6 +69,7 @@ $ docker run  -d \
 |`RESTART_CONTAINER`| No |Set to `no` to **disable** the automatic restart when the network is possibly down.|`RESTART_CONTAINER=yes`|`yes`|
 |`INSTALL_PYTHON3`| No |Set this to `yes` to let the container install Python3.|`INSTALL_PYTHON3=yes`|`no`|
 |`ADDITIONAL_PORTS`| No |Adding a comma delimited list of ports will allow these ports via the iptables script.|`ADDITIONAL_PORTS=1234,8112`||
+|`SKIP_CHOWN_DOWNLOADS`| No | Skips taking ownership(chown) of the downloads path at startup.|`SKIP_CHOWN_DOWNLOADS="yes"`|`no`|
 
 ## Volumes
 | Volume | Required | Function | Example |
