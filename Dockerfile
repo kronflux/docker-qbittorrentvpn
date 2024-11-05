@@ -1,5 +1,5 @@
 # qBittorrent, OpenVPN and WireGuard, qbittorrentvpn
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 
 WORKDIR /opt
 
@@ -118,7 +118,7 @@ RUN apt update \
     jq \
     libssl-dev \
     && apt-get clean \
-    && apt --purge autoremove -y  \
+    && apt --purge autoremove -y \
     && rm -rf \
     /var/lib/apt/lists/* \
     /tmp/* \
@@ -135,15 +135,16 @@ RUN apt update \
     jq \
     libssl-dev \
     pkg-config \
-    qtbase5-dev \
-    qttools5-dev \
+    qt6-base-dev \
+    qt6-base-private-dev\
+    qt6-tools-dev \
     zlib1g-dev \
     && QBITTORRENT_RELEASE=$(curl -sX GET "https://api.github.com/repos/qBittorrent/qBittorrent/tags" | jq '.[] | select(.name | index ("alpha") | not) | select(.name | index ("beta") | not) | select(.name | index ("rc") | not) | .name' | head -n 1 | tr -d '"') \
     && curl -o /opt/qBittorrent-${QBITTORRENT_RELEASE}.tar.gz -L "https://github.com/qbittorrent/qBittorrent/archive/${QBITTORRENT_RELEASE}.tar.gz" \
     && tar -xzf /opt/qBittorrent-${QBITTORRENT_RELEASE}.tar.gz \
     && rm /opt/qBittorrent-${QBITTORRENT_RELEASE}.tar.gz \
     && cd /opt/qBittorrent-${QBITTORRENT_RELEASE} \
-    && cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DGUI=OFF -DCMAKE_CXX_STANDARD=17 \
+    && cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local -DGUI=OFF -DCMAKE_CXX_STANDARD=17 -DQT6=ON \
     && cmake --build build --parallel $(nproc) \
     && cmake --install build \
     && cd /opt \
@@ -156,8 +157,9 @@ RUN apt update \
     jq \
     libssl-dev \
     pkg-config \
-    qtbase5-dev \
-    qttools5-dev \
+    qt6-base-dev \
+    qt6-base-private-dev\
+    qt6-tools-dev \
     zlib1g-dev \
     && apt-get clean \
     && apt --purge autoremove -y \
@@ -174,13 +176,14 @@ RUN echo "deb http://deb.debian.org/debian/ unstable main" > /etc/apt/sources.li
     ca-certificates \
     dos2unix \
     inetutils-ping \
+    iproute2 \
     ipcalc \
     iptables \
     kmod \
-    libqt5network5 \
-    libqt5xml5 \
-    libqt5sql5 \
-    libssl1.1 \
+    libqt6network6 \
+    libqt6xml6 \
+    libqt6sql6 \
+    libssl3t64 \
     moreutils \
     net-tools \
     openresolv \
@@ -195,7 +198,7 @@ RUN echo "deb http://deb.debian.org/debian/ unstable main" > /etc/apt/sources.li
     /var/tmp/*
 
 # Install (un)compressing tools like unrar, 7z, unzip and zip
-RUN echo "deb http://deb.debian.org/debian/ bullseye non-free" > /etc/apt/sources.list.d/non-free-unrar.list \
+RUN echo "deb http://deb.debian.org/debian/ trixie non-free" > /etc/apt/sources.list.d/non-free-unrar.list \
     && printf 'Package: *\nPin: release a=non-free\nPin-Priority: 150\n' > /etc/apt/preferences.d/limit-non-free \
     && apt update \
     && apt -y upgrade \
