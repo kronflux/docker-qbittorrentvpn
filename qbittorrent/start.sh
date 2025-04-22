@@ -19,11 +19,6 @@ if [ ! -e /config/qBittorrent/config/qBittorrent.conf ]; then
 	chown ${PUID}:${PGID} /config/qBittorrent/config/qBittorrent.conf
 fi
 
-export INSTALL_PYTHON3=$(echo "${INSTALL_PYTHON3,,}")
-if [[ $INSTALL_PYTHON3 == "1" || $INSTALL_PYTHON3 == "true" || $INSTALL_PYTHON3 == "yes" ]]; then
-	/bin/bash /etc/qbittorrent/install-python3.sh
-fi
-
 # The mess down here checks if SSL is enabled.
 export ENABLE_SSL=$(echo "${ENABLE_SSL,,}")
 

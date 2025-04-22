@@ -1,5 +1,5 @@
 #!/bin/bash
-# Forked from binhex's OpenVPN dockers
+
 set -e
 
 # check for presence of network interface docker0
@@ -81,6 +81,8 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 		echo "[INFO] OpenVPN config file is found at ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
 	else
 		echo "[INFO] WireGuard config file is found at ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
+		# Secure WireGuard config
+		chmod 600 "${VPN_CONFIG}" || echo "[WARNING] Failed to chmod 600 ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
 		if [[ "${VPN_CONFIG}" != "/config/wireguard/wg0.conf" ]]; then
 			echo "[ERROR] WireGuard config filename is not 'wg0.conf'" | ts '%Y-%m-%d %H:%M:%.S'
 			echo "[ERROR] Rename ${VPN_CONFIG} to 'wg0.conf'" | ts '%Y-%m-%d %H:%M:%.S'

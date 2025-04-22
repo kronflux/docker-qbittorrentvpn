@@ -16,7 +16,7 @@ RUN apt update \
     ca-certificates \
     g++ \
     libxml2-utils \
-    && BOOST_VERSION=1.86.0 \
+    && BOOST_VERSION=1.88.0 \
     && BOOST_VERSION_US=$(echo ${BOOST_VERSION} | tr '.' '_') \
     && curl -o /opt/boost_${BOOST_VERSION_US}.tar.gz -L https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_US}.tar.gz \
     && tar -xzf /opt/boost_${BOOST_VERSION_US}.tar.gz -C /opt \
@@ -167,6 +167,13 @@ RUN apt update \
     /var/lib/apt/lists/* \
     /tmp/* \
     /var/tmp/*
+
+# Install Python 3 for runtime scripts
+RUN apt update && \
+    apt install -y --no-install-recommends python3 && \
+    apt-get clean && \
+    apt --purge autoremove -y && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install WireGuard and some other dependencies some of the scripts in the container rely on.
 RUN echo "deb http://deb.debian.org/debian/ unstable main" > /etc/apt/sources.list.d/unstable-wireguard.list \
