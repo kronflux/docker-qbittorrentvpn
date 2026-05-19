@@ -7,7 +7,9 @@ fi
 chown -R ${PUID}:${PGID} /config/qBittorrent
 
 # Set the rights on the /downloads folder
-find /downloads -not -user ${PUID} -execdir chown ${PUID}:${PGID} {} \+
+if [[ -z "${SKIP_CHOWN_DOWNLOADS}" ]]; then
+	find /downloads -not -user ${PUID} -execdir chown ${PUID}:${PGID} {} \+
+fi
 
 # Check if qBittorrent.conf exists, if not, copy the template over
 if [ ! -e /config/qBittorrent/config/qBittorrent.conf ]; then
@@ -18,6 +20,12 @@ if [ ! -e /config/qBittorrent/config/qBittorrent.conf ]; then
 fi
 
 QBITTORRENT_CONF="/config/qBittorrent/config/qBittorrent.conf"
+
+# Normalise line endings in case the config was edited on Windows
+dos2unix "${QBITTORRENT_CONF}" 2>/dev/null || true
+
+# Clear stale lock files so qBittorrent doesn't hang on restart
+rm -f /config/qBittorrent/data/BT_backup/session.lock /config/qBittorrent/config/lockfile
 
 # Bind qBittorrent to the VPN interface for application-level killswitch
 if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]]; then
@@ -101,10 +109,12 @@ if [[ ${ENABLE_SSL} == "1" || ${ENABLE_SSL} == "true" || ${ENABLE_SSL} == "yes" 
 		echo "[WARNING] /config/qBittorrent/config/qBittorrent.conf doesn't have the WebUI\HTTPS\Enabled loaded. Added it to the config." | ts '%Y-%m-%d %H:%M:%.S'
 		echo 'WebUI\HTTPS\Enabled=true' >> "/config/qBittorrent/config/qBittorrent.conf"
 	fi
-else
+elif [[ ${ENABLE_SSL} == "0" || ${ENABLE_SSL} == "false" || ${ENABLE_SSL} == "no" ]]; then
 	echo "[WARNING] ENABLE_SSL is set to '${ENABLE_SSL}', SSL is not enabled. This could cause issues with logging if other apps use the same Cookie name (SID)." | ts '%Y-%m-%d %H:%M:%.S'
 	echo "[WARNING] Removing the SSL configuration from the config file..." | ts '%Y-%m-%d %H:%M:%.S'
 	sed -i '/^WebUI\\HTTPS*/d' "/config/qBittorrent/config/qBittorrent.conf"
+else
+	echo "[WARNING] ENABLE_SSL is set to '${ENABLE_SSL}', SSL config ignored. No changes made." | ts '%Y-%m-%d %H:%M:%.S'
 fi
 
 # Check if the PGID exists, if not create the group with the name 'qbittorrent'
@@ -199,6 +209,13 @@ if [ -e /proc/$qbittorrentpid ]; then
 	echo "[INFO] HEALTH_CHECK_AMOUNT is set to ${HEALTH_CHECK_AMOUNT}" | ts '%Y-%m-%d %H:%M:%.S'
 
 	while true; do
+		# Confirm the process is still running, start it back up if it's not.
+		if ! ps -p $qbittorrentpid > /dev/null; then
+			echo "[ERROR] qBittorrent daemon is not running. Restarting..." | ts '%Y-%m-%d %H:%M:%.S'
+			/bin/bash /etc/qbittorrent/qbittorrent.init start
+			wait $!
+			qbittorrentpid=$(cat /var/run/qbittorrent.pid)
+		fi
 		# Ping uses both exit codes 1 and 2. Exit code 2 cannot be used for docker health checks, therefore we use this script to catch error code 2
 		ping -c ${HEALTH_CHECK_AMOUNT} $HOST > /dev/null 2>&1
 		STATUS=$?

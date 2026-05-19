@@ -50,7 +50,7 @@ $ docker run  -d \
 |`VPN_PASSWORD`| No | If username and password provided, configures ovpn file automatically |`VPN_PASSWORD=ac98df79ed7fb`||
 |`LAN_NETWORK`| Yes (atleast one) | Comma delimited local Network's with CIDR notation |`LAN_NETWORK=192.168.0.0/24,10.10.0.0/24`||
 |`LEGACY_IPTABLES`| No | Use `iptables (legacy)` instead of `iptables (nf_tables)` |`LEGACY_IPTABLES=yes`||
-|`ENABLE_SSL`| No | Let the container handle SSL (yes/no)? |`ENABLE_SSL=yes`|`yes`|
+|`ENABLE_SSL`| No | Let the container handle SSL (yes/no/ignore)? |`ENABLE_SSL=yes`|`ignore`|
 |`NAME_SERVERS`| No | Comma delimited name servers (OpenVPN only; WireGuard uses `DNS=` in wg0.conf) |`NAME_SERVERS=1.1.1.1,1.0.0.1`|`1.1.1.1,1.0.0.1`|
 |`PUID`| No | UID applied to /config files and /downloads |`PUID=99`|`99`|
 |`PGID`| No | GID applied to /config files and /downloads  |`PGID=100`|`100`|
@@ -64,6 +64,7 @@ $ docker run  -d \
 |`WEBUI_PORT`| No |Port for the qBittorrent WebUI. Must match the container port mapping.|`WEBUI_PORT=8080`|`8080`|
 |`ENABLE_UPNP`| No |Enable UPnP port mapping in qBittorrent. Disabled by default — UPnP is ineffective and potentially leaky behind a VPN.|`ENABLE_UPNP=yes`|`no`|
 |`ADDITIONAL_PORTS`| No |Adding a comma delimited list of ports will allow these ports via the iptables script.|`ADDITIONAL_PORTS=1234,8112`||
+|`SKIP_CHOWN_DOWNLOADS`| No | Skips taking ownership(chown) of the downloads path at startup.|`SKIP_CHOWN_DOWNLOADS="yes"`|`no`|
 
 ## Volumes
 | Volume | Required | Function | Example |
