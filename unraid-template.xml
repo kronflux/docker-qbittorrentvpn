@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>qbittorrentvpn</Name>
+  <Repository>kronflux/qbittorrentvpn:latest</Repository>
+  <Registry>https://hub.docker.com/r/kronflux/qbittorrentvpn</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/kronflux/docker-qbittorrentvpn</Support>
+  <Project>https://github.com/kronflux/docker-qbittorrentvpn</Project>
+  <Overview>qBittorrent-nox with built-in WireGuard or OpenVPN client and an iptables killswitch that drops all non-VPN traffic if the tunnel goes down.&#xD;
+&#xD;
+**VPN config:**&#xD;
+- WireGuard: drop your provider's config into /config/wireguard/wg0.conf (filename must be exactly wg0.conf).&#xD;
+- OpenVPN: drop your provider's .ovpn (or .conf) into /config/openvpn/. Set Steam-style credentials below — they are written to tmpfs at runtime so the plaintext password never touches the appdata volume.&#xD;
+&#xD;
+**LAN_NETWORK** must contain your LAN's CIDR (e.g. 192.168.1.0/24) or the WebUI will be firewalled off from your LAN by the killswitch. Add the Docker bridge range (172.17.0.0/16) is NOT needed — handled internally.&#xD;
+&#xD;
+**WireGuard IPv6** is auto-enabled in the container's network namespace when wg0.conf contains IPv6 addresses — no --sysctl flag needed on the run command.&#xD;
+&#xD;
+**Kernel modules:** Requires tun.ko on the host. If wireguard.ko is missing, the container falls back to userspace wireguard-go automatically.&#xD;
+&#xD;
+**Default WebUI credentials:** admin / adminadmin — change on first login.&#xD;
+&#xD;
+**Ports:** 8080/tcp WebUI, 8999/tcp + 8999/udp BitTorrent listening.</Overview>
+  <Category>Downloaders: Network:VPN:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/kronflux/docker-qbittorrentvpn/refs/heads/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/qbittorrent/qBittorrent/master/src/icons/qbittorrent-tray.svg</Icon>
+  <ExtraParams>--cap-add=NET_ADMIN --sysctl="net.ipv4.conf.all.src_valid_mark=1" --device=/dev/net/tun</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- Volumes -->
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/qbittorrentvpn" Mode="rw" Description="qBittorrent, WireGuard (/config/wireguard/wg0.conf), and OpenVPN (/config/openvpn/*.ovpn) config files." Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Downloads" Target="/downloads" Default="/mnt/user/downloads" Mode="rw" Description="Default save path for torrents." Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <!-- VPN: Required -->
+  <Config Name="VPN Enabled" Target="VPN_ENABLED" Default="yes" Description="Enable the VPN client and iptables killswitch (yes/no). Disabling exposes your real IP — only set to 'no' if you know what you're doing." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="VPN Type" Target="VPN_TYPE" Default="wireguard" Description="wireguard or openvpn. WireGuard is recommended (faster, simpler config)." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="LAN Network" Target="LAN_NETWORK" Default="192.168.1.0/24" Description="Comma-separated CIDR ranges for your LAN(s), e.g. 192.168.1.0/24,10.0.0.0/24. Required so the killswitch lets the WebUI through to your LAN." Type="Variable" Display="always" Required="true" Mask="false"/>
+
+  <!-- VPN: OpenVPN credentials (ignored for WireGuard) -->
+  <Config Name="OpenVPN Username" Target="VPN_USERNAME" Default="" Description="OpenVPN account username. Leave empty for WireGuard. Written to a tmpfs file at runtime — never persisted to /config." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="OpenVPN Password" Target="VPN_PASSWORD" Default="" Description="OpenVPN account password. Leave empty for WireGuard. Written to a tmpfs file at runtime — never persisted to /config." Type="Variable" Display="always" Required="false" Mask="true"/>
+
+  <!-- WebUI / User -->
+  <Config Name="WebUI Port" Target="WEBUI_PORT" Default="8080" Description="Port qBittorrent's WebUI listens on inside the container. Must match the port mapping below." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="PUID" Target="PUID" Default="99" Description="User ID applied to /config files and /downloads. Unraid default: 99 (nobody)." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="PGID" Target="PGID" Default="100" Description="Group ID applied to /config files and /downloads. Unraid default: 100 (users)." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="UMASK" Target="UMASK" Default="002" Description="Umask for files created by qBittorrent." Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <!-- Health Checks -->
+  <Config Name="Health Check Host" Target="HEALTH_CHECK_HOST" Default="one.one.one.one" Description="Host pinged by the in-container health loop to verify VPN connectivity. Hostname tests DNS too; an IP only tests raw connectivity." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Health Check Interval" Target="HEALTH_CHECK_INTERVAL" Default="60" Description="Seconds between in-container health pings." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Health Check Amount" Target="HEALTH_CHECK_AMOUNT" Default="1" Description="Number of pings sent per health check." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Health Check Silent" Target="HEALTH_CHECK_SILENT" Default="1" Description="1 = suppress 'Network is up' log lines on every check; 0 = log every check." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Restart on Network Failure" Target="RESTART_CONTAINER" Default="yes" Description="Exit the container when the health check fails so Docker restarts it. Set 'no' to keep the container running for debugging." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="VPN Wait Timeout" Target="VPN_WAIT_TIMEOUT" Default="120" Description="Seconds to wait for the VPN tunnel interface to appear before giving up and exiting." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <!-- Advanced options -->
+  <Config Name="Enable UPnP" Target="ENABLE_UPNP" Default="no" Description="UPnP port mapping in qBittorrent. Disabled by default — UPnP is ineffective behind a VPN and can leak." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Enable SSL" Target="ENABLE_SSL" Default="ignore" Description="WebUI SSL handling: 'yes' generates a self-signed cert and enables HTTPS; 'no' strips SSL config; 'ignore' leaves your settings alone." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Name Servers" Target="NAME_SERVERS" Default="1.1.1.1,8.8.8.8,1.0.0.1,8.8.4.4" Description="Comma-separated DNS servers. OpenVPN only — WireGuard uses the DNS= line in wg0.conf and ignores this." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Legacy iptables" Target="LEGACY_IPTABLES" Default="" Description="Set 'yes' to use iptables-legacy instead of iptables-nft. Needed only on hosts running older kernels that don't speak nf_tables." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Additional Ports" Target="ADDITIONAL_PORTS" Default="" Description="Comma-separated TCP ports to open through the killswitch (e.g. 8112,1234) for linked containers like Sonarr/Radarr." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Skip chown on /downloads" Target="SKIP_CHOWN_DOWNLOADS" Default="no" Description="Set 'yes' to skip the recursive chown on /downloads at startup. Useful for large libraries where the chown adds minutes to startup." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <!-- Port Mappings -->
+  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="qBittorrent WebUI port. Must match the WebUI Port variable above." Type="Port" Display="always" Required="true" Mask="false"/>
+  <Config Name="BitTorrent Port (TCP)" Target="8999" Default="8999" Mode="tcp" Description="qBittorrent peer listening port (TCP)." Type="Port" Display="always" Required="true" Mask="false"/>
+  <Config Name="BitTorrent Port (UDP)" Target="8999" Default="8999" Mode="udp" Description="qBittorrent peer listening port (UDP) — used by DHT, uTP, and UDP trackers." Type="Port" Display="always" Required="true" Mask="false"/>
+</Container>
