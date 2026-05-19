@@ -169,4 +169,6 @@ RUN chmod +x /etc/qbittorrent/*.sh /etc/qbittorrent/*.init /etc/openvpn/*.sh
 EXPOSE 8080
 EXPOSE 8999
 EXPOSE 8999/udp
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s \
+    CMD curl -sf "http://localhost:${WEBUI_PORT:-8080}" > /dev/null && ping -c 1 -W 5 ${HEALTH_CHECK_HOST:-1.1.1.1} > /dev/null || exit 1
 CMD ["/bin/bash", "/etc/openvpn/start.sh"]
