@@ -17,6 +17,27 @@ if [ ! -e /config/qBittorrent/config/qBittorrent.conf ]; then
 	chown ${PUID}:${PGID} /config/qBittorrent/config/qBittorrent.conf
 fi
 
+QBITTORRENT_CONF="/config/qBittorrent/config/qBittorrent.conf"
+
+# Bind qBittorrent to the VPN interface for application-level killswitch
+if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]]; then
+	if [[ "${VPN_TYPE}" == "wireguard" ]]; then
+		VPN_INTERFACE="wg0"
+	else
+		VPN_INTERFACE="tun0"
+	fi
+	echo "[INFO] Binding qBittorrent to VPN interface ${VPN_INTERFACE}" | ts '%Y-%m-%d %H:%M:%.S'
+	sed -i 's~^Session\\Interface=.*~Session\\Interface='"${VPN_INTERFACE}"'~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Session\\InterfaceName=.*~Session\\InterfaceName='"${VPN_INTERFACE}"'~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Connection\\Interface=.*~Connection\\Interface='"${VPN_INTERFACE}"'~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Connection\\InterfaceName=.*~Connection\\InterfaceName='"${VPN_INTERFACE}"'~g' "${QBITTORRENT_CONF}"
+else
+	sed -i 's~^Session\\Interface=.*~Session\\Interface=~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Session\\InterfaceName=.*~Session\\InterfaceName=~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Connection\\Interface=.*~Connection\\Interface=~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^Connection\\InterfaceName=.*~Connection\\InterfaceName=~g' "${QBITTORRENT_CONF}"
+fi
+
 # The mess down here checks if SSL is enabled.
 export ENABLE_SSL=$(echo "${ENABLE_SSL,,}")
 
