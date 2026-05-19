@@ -38,7 +38,7 @@ RUN BOOST_VERSION=$(curl -s https://archives.boost.io/release/ \
 RUN NINJA_ASSETS=$(curl -sX GET "https://api.github.com/repos/ninja-build/ninja/releases" \
         | jq '.[] | select(.prerelease==false) | .assets_url' | head -n 1 | tr -d '"') \
     && NINJA_DOWNLOAD_URL=$(curl -sX GET ${NINJA_ASSETS} \
-        | jq '.[] | select(.name | match("ninja-linux";"i")) .browser_download_url' | tr -d '"') \
+        | jq '.[] | select(.name | match("ninja-linux.zip";"i")) .browser_download_url' | tr -d '"') \
     && curl -o /opt/ninja-linux.zip -L ${NINJA_DOWNLOAD_URL} \
     && unzip /opt/ninja-linux.zip -d /opt \
     && mv /opt/ninja /usr/local/bin/ninja \
@@ -55,18 +55,20 @@ RUN CMAKE_ASSETS=$(curl -sX GET "https://api.github.com/repos/Kitware/CMake/rele
     && /bin/bash /opt/cmake.sh --skip-license --prefix=/usr \
     && rm -rf /opt/*
 
-# Compile libtorrent-rasterbar (RC_1_2 branch)
-RUN LIBTORRENT_ASSETS=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent/releases" \
-        | jq '.[] | select(.prerelease==false) | select(.target_commitish=="RC_1_2") | .assets_url' \
-        | head -n 1 | tr -d '"') \
-    && LIBTORRENT_DOWNLOAD_URL=$(curl -sX GET ${LIBTORRENT_ASSETS} \
-        | jq '.[0] .browser_download_url' | tr -d '"') \
-    && LIBTORRENT_NAME=$(curl -sX GET ${LIBTORRENT_ASSETS} \
-        | jq '.[0] .name' | tr -d '"') \
+# Compile libtorrent-rasterbar
+RUN LIBTORRENT_DEFAULT_BRANCH=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent" \
+        | jq -r '.default_branch') \
+    && LIBTORRENT_ASSETS_URL=$(curl -sX GET "https://api.github.com/repos/arvidn/libtorrent/releases" \
+        | jq -r --arg branch "$LIBTORRENT_DEFAULT_BRANCH" \
+        '[.[] | select(.prerelease == false and .target_commitish == $branch)] | first | .assets_url') \
+    && LIBTORRENT_ASSET=$(curl -sX GET "${LIBTORRENT_ASSETS_URL}" \
+        | jq -r '[.[] | select(.name | test("\\.tar\\.gz$"))] | first') \
+    && LIBTORRENT_DOWNLOAD_URL=$(echo "${LIBTORRENT_ASSET}" | jq -r '.browser_download_url') \
+    && LIBTORRENT_NAME=$(echo "${LIBTORRENT_ASSET}" | jq -r '.name') \
     && curl -o /opt/${LIBTORRENT_NAME} -L ${LIBTORRENT_DOWNLOAD_URL} \
     && tar -xzf /opt/${LIBTORRENT_NAME} \
     && rm /opt/${LIBTORRENT_NAME} \
-    && cd /opt/libtorrent-rasterbar* \
+    && cd /opt/libtorrent-* \
     && cmake -G Ninja -B build \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -77,9 +79,8 @@ RUN LIBTORRENT_ASSETS=$(curl -sX GET "https://api.github.com/repos/arvidn/libtor
     && rm -rf /opt/*
 
 # Compile qBittorrent-nox
-RUN QBITTORRENT_RELEASE=$(curl -sX GET "https://api.github.com/repos/qBittorrent/qBittorrent/tags" \
-        | jq '.[] | select(.name | index ("alpha") | not) | select(.name | index ("beta") | not) | select(.name | index ("rc") | not) | .name' \
-        | head -n 1 | tr -d '"') \
+RUN QBITTORRENT_RELEASE=$(curl -sX GET "https://api.github.com/repos/qbittorrent/qBittorrent/releases" \
+        | jq -r '[.[] | select(.prerelease == false)] | first | .tag_name') \
     && curl -o /opt/qBittorrent-${QBITTORRENT_RELEASE}.tar.gz -L \
         "https://github.com/qbittorrent/qBittorrent/archive/${QBITTORRENT_RELEASE}.tar.gz" \
     && tar -xzf /opt/qBittorrent-${QBITTORRENT_RELEASE}.tar.gz \
