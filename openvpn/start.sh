@@ -81,6 +81,8 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 		echo "[INFO] OpenVPN config file is found at ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
 	else
 		echo "[INFO] WireGuard config file is found at ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
+		# Secure WireGuard config
+		chmod 600 "${VPN_CONFIG}" || echo "[WARNING] Failed to chmod 600 ${VPN_CONFIG}" | ts '%Y-%m-%d %H:%M:%.S'
 		if [[ "${VPN_CONFIG}" != "/config/wireguard/wg0.conf" ]]; then
 			echo "[ERROR] WireGuard config filename is not 'wg0.conf'" | ts '%Y-%m-%d %H:%M:%.S'
 			echo "[ERROR] Rename ${VPN_CONFIG} to 'wg0.conf'" | ts '%Y-%m-%d %H:%M:%.S'
@@ -89,24 +91,22 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 		fi
 	fi
 
-	# Read username and password env vars and put them in credentials.conf, then add ovpn config for credentials file
+	# Write VPN credentials to tmpfs (/run) so the password never touches the host volume
 	if [[ "${VPN_TYPE}" == "openvpn" ]]; then
 		if [[ ! -z "${VPN_USERNAME}" ]] && [[ ! -z "${VPN_PASSWORD}" ]]; then
-			if [[ ! -e /config/openvpn/credentials.conf ]]; then
-				touch /config/openvpn/credentials.conf
-			fi
+			# Remove legacy plaintext credentials file from the config volume if present
+			rm -f /config/openvpn/credentials.conf
 
-			echo "${VPN_USERNAME}" > /config/openvpn/credentials.conf
-			echo "${VPN_PASSWORD}" >> /config/openvpn/credentials.conf
+			printf '%s\n%s\n' "${VPN_USERNAME}" "${VPN_PASSWORD}" > /run/openvpn-credentials
+			chmod 600 /run/openvpn-credentials
 
-			# Replace line with one that points to credentials.conf
-			auth_cred_exist=$(cat "${VPN_CONFIG}" | grep -m 1 'auth-user-pass')
+			# Point auth-user-pass in the ovpn config at the tmpfs credentials file
+			auth_cred_exist=$(grep -m 1 'auth-user-pass' "${VPN_CONFIG}" || true)
 			if [[ ! -z "${auth_cred_exist}" ]]; then
-				# Get line number of auth-user-pass
 				LINE_NUM=$(grep -Fn -m 1 'auth-user-pass' "${VPN_CONFIG}" | cut -d: -f 1)
-				sed -i "${LINE_NUM}s/.*/auth-user-pass credentials.conf/" "${VPN_CONFIG}"
+				sed -i "${LINE_NUM}s~.*~auth-user-pass /run/openvpn-credentials~" "${VPN_CONFIG}"
 			else
-				sed -i "1s/.*/auth-user-pass credentials.conf/" "${VPN_CONFIG}"
+				sed -i "1s~.*~auth-user-pass /run/openvpn-credentials~" "${VPN_CONFIG}"
 			fi
 		fi
 	fi
