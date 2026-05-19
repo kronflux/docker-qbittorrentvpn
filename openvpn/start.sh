@@ -234,17 +234,23 @@ else
 fi
 
 
-# split comma seperated string into list from NAME_SERVERS env variable
-IFS=',' read -ra name_server_list <<< "${NAME_SERVERS}"
+if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]]; then
+	if [[ "${VPN_TYPE}" == "openvpn" ]]; then
+		# split comma seperated string into list from NAME_SERVERS env variable
+		IFS=',' read -ra name_server_list <<< "${NAME_SERVERS}"
 
-# process name servers in the list
-for name_server_item in "${name_server_list[@]}"; do
-	# strip whitespace from start and end of lan_network_item
-	name_server_item=$(echo "${name_server_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
+		# process name servers in the list
+		for name_server_item in "${name_server_list[@]}"; do
+			# strip whitespace from start and end of lan_network_item
+			name_server_item=$(echo "${name_server_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
 
-	echo "[INFO] Adding ${name_server_item} to resolv.conf" | ts '%Y-%m-%d %H:%M:%.S'
-	echo "nameserver ${name_server_item}" >> /etc/resolv.conf
-done
+			echo "[INFO] Adding ${name_server_item} to resolv.conf" | ts '%Y-%m-%d %H:%M:%.S'
+			echo "nameserver ${name_server_item}" >> /etc/resolv.conf
+		done
+	else
+		echo "[INFO] WireGuard active; DNS is managed via DNS= in wg0.conf — NAME_SERVERS is ignored" | ts '%Y-%m-%d %H:%M:%.S'
+	fi
+fi
 
 if [[ -z "${PUID}" ]]; then
 	echo "[INFO] PUID not defined. Defaulting to root user" | ts '%Y-%m-%d %H:%M:%.S'
@@ -269,6 +275,21 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 			wg-quick down $VPN_CONFIG || echo "WireGuard is down already" | ts '%Y-%m-%d %H:%M:%.S' # Run wg-quick down as an extra safeguard in case WireGuard is still up for some reason
 			sleep 0.5 # Just to give WireGuard a bit to go down
 		fi
+		# Auto-enable IPv6 in the container's network namespace if the WireGuard config uses IPv6.
+		# With NET_ADMIN, net.ipv6 sysctls are namespace-scoped and can be set from within the container,
+		# so users do not need to add --sysctl net.ipv6.conf.all.disable_ipv6=0 to their docker run command.
+		if grep -qE '^(Address|AllowedIPs).*:' "${VPN_CONFIG}" 2>/dev/null; then
+			echo "[INFO] IPv6 detected in WireGuard config, enabling IPv6 in network namespace" | ts '%Y-%m-%d %H:%M:%.S'
+			if sysctl -w net.ipv6.conf.all.disable_ipv6=0 2>/dev/null && sysctl -w net.ipv6.conf.default.disable_ipv6=0 2>/dev/null; then
+				echo "[INFO] IPv6 enabled. If you have an IPv6 LAN, add its range to LAN_NETWORK (e.g. LAN_NETWORK=192.168.1.0/24,fd00::/8)" | ts '%Y-%m-%d %H:%M:%.S'
+			else
+				echo "[WARNING] Could not enable IPv6 via sysctl — add --sysctl net.ipv6.conf.all.disable_ipv6=0 to your docker run command" | ts '%Y-%m-%d %H:%M:%.S'
+			fi
+		fi
+		# Pre-register Docker's resolver so resolvconf doesn't lose it when wg-quick
+		# rewrites /etc/resolv.conf with VPN DNS entries (or when wg-quick down above
+		# removed any previously registered entries).
+		resolvconf -a docker < /etc/resolv.conf 2>/dev/null || true
 		wg-quick up $VPN_CONFIG
 		#exec /bin/bash /etc/openvpn/openvpn.init start &
 	fi

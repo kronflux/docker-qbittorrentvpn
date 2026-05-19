@@ -51,7 +51,7 @@ $ docker run  -d \
 |`LAN_NETWORK`| Yes (atleast one) | Comma delimited local Network's with CIDR notation |`LAN_NETWORK=192.168.0.0/24,10.10.0.0/24`||
 |`LEGACY_IPTABLES`| No | Use `iptables (legacy)` instead of `iptables (nf_tables)` |`LEGACY_IPTABLES=yes`||
 |`ENABLE_SSL`| No | Let the container handle SSL (yes/no)? |`ENABLE_SSL=yes`|`yes`|
-|`NAME_SERVERS`| No | Comma delimited name servers |`NAME_SERVERS=1.1.1.1,1.0.0.1`|`1.1.1.1,1.0.0.1`|
+|`NAME_SERVERS`| No | Comma delimited name servers (OpenVPN only; WireGuard uses `DNS=` in wg0.conf) |`NAME_SERVERS=1.1.1.1,1.0.0.1`|`1.1.1.1,1.0.0.1`|
 |`PUID`| No | UID applied to /config files and /downloads |`PUID=99`|`99`|
 |`PGID`| No | GID applied to /config files and /downloads  |`PGID=100`|`100`|
 |`UMASK`| No | |`UMASK=002`|`002`|
@@ -88,13 +88,13 @@ Access https://IPADDRESS:PORT from a browser on the same network. (for example: 
 # How to use WireGuard 
 The container will fail to boot if `VPN_ENABLED` is set and there is no valid .conf file present in the /config/wireguard directory. Drop a .conf file from your VPN provider into /config/wireguard and start the container again. The file must have the name `wg0.conf`, or it will fail to start.
 
-## WireGuard IPv6 issues
-If you use WireGuard and also have IPv6 enabled, it is necessary to add the IPv6 range to the `LAN_NETWORK` environment variable.  
-Additionally the parameter `--sysctl net.ipv6.conf.all.disable_ipv6=0` also must be added to the `docker run` command, or to the "Extra Parameters" in Unraid.  
-The full Unraid `Extra Parameters` would be: `--restart unless-stopped --sysctl net.ipv6.conf.all.disable_ipv6=0"`  
-If you do not do this, the container will keep on stopping with the error `RTNETLINK answers permission denied`.
-Since I do not have IPv6, I am did not test.
-Thanks to [mchangrh](https://github.com/mchangrh) / [Issue #49](https://github.com/DyonR/docker-qbittorrentvpn/issues/49)  
+## WireGuard IPv6
+If your WireGuard config contains IPv6 addresses (in `Address` or `AllowedIPs`), the container automatically enables IPv6 in its network namespace via sysctl — no `--sysctl` flag required on the docker run command.
+
+If you have an IPv6 LAN you want to reach from inside the container, add it to `LAN_NETWORK`:
+```
+LAN_NETWORK=192.168.1.0/24,fd00::/8
+```
 
 # How to use OpenVPN
 The container will fail to boot if `VPN_ENABLED` is set and there is no valid .ovpn file present in the /config/openvpn directory. Drop a .ovpn file from your VPN provider into /config/openvpn (if necessary with additional files like certificates) and start the container again. You may need to edit the ovpn configuration file to load your VPN credentials from a file by setting `auth-user-pass`.
