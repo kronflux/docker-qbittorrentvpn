@@ -61,6 +61,8 @@ $ docker run  -d \
 |`HEALTH_CHECK_AMOUNT`| No |The amount of pings that get send when checking for connection.|`HEALTH_CHECK_AMOUNT=10`|`1`|
 |`RESTART_CONTAINER`| No |Set to `no` to **disable** the automatic restart when the network is possibly down.|`RESTART_CONTAINER=yes`|`yes`|
 |`VPN_WAIT_TIMEOUT`| No |Seconds to wait for VPN tunnel to come up before exiting with an error.|`VPN_WAIT_TIMEOUT=120`|`120`|
+|`WEBUI_PORT`| No |Port for the qBittorrent WebUI. Must match the container port mapping.|`WEBUI_PORT=8080`|`8080`|
+|`ENABLE_UPNP`| No |Enable UPnP port mapping in qBittorrent. Disabled by default — UPnP is ineffective and potentially leaky behind a VPN.|`ENABLE_UPNP=yes`|`no`|
 |`ADDITIONAL_PORTS`| No |Adding a comma delimited list of ports will allow these ports via the iptables script.|`ADDITIONAL_PORTS=1234,8112`||
 
 ## Volumes

@@ -38,6 +38,28 @@ else
 	sed -i 's~^Connection\\InterfaceName=.*~Connection\\InterfaceName=~g' "${QBITTORRENT_CONF}"
 fi
 
+# Configure UPnP
+export ENABLE_UPNP=$(echo "${ENABLE_UPNP,,}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
+if [[ $ENABLE_UPNP == "1" || $ENABLE_UPNP == "true" || $ENABLE_UPNP == "yes" ]]; then
+	echo "[INFO] ENABLE_UPNP enabled" | ts '%Y-%m-%d %H:%M:%.S'
+	sed -i 's~^Connection\\UPnP=.*~Connection\\UPnP=true~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^WebUI\\UseUPnP=.*~WebUI\\UseUPnP=true~g' "${QBITTORRENT_CONF}"
+else
+	echo "[INFO] ENABLE_UPNP disabled (default)" | ts '%Y-%m-%d %H:%M:%.S'
+	sed -i 's~^Connection\\UPnP=.*~Connection\\UPnP=false~g' "${QBITTORRENT_CONF}"
+	sed -i 's~^WebUI\\UseUPnP=.*~WebUI\\UseUPnP=false~g' "${QBITTORRENT_CONF}"
+fi
+
+# Configure WebUI port
+export WEBUI_PORT=$(echo "${WEBUI_PORT}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
+if [[ ! -z "${WEBUI_PORT}" ]]; then
+	echo "[INFO] WEBUI_PORT defined as '${WEBUI_PORT}'" | ts '%Y-%m-%d %H:%M:%.S'
+else
+	echo "[INFO] WEBUI_PORT not defined (via -e WEBUI_PORT), defaulting to '8080'" | ts '%Y-%m-%d %H:%M:%.S'
+	export WEBUI_PORT="8080"
+fi
+sed -i 's~^WebUI\\Port=.*~WebUI\\Port='"${WEBUI_PORT}"'~g' "${QBITTORRENT_CONF}"
+
 # The mess down here checks if SSL is enabled.
 export ENABLE_SSL=$(echo "${ENABLE_SSL,,}")
 

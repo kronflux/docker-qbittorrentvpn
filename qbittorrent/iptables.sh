@@ -116,8 +116,8 @@ iptables -A INPUT -s "${docker_network_cidr}" -d "${docker_network_cidr}" -j ACC
 iptables -A INPUT -i "${docker_interface}" -p $VPN_PROTOCOL --sport $VPN_PORT -j ACCEPT
 
 # accept input to qBittorrent webui port
-iptables -A INPUT -i "${docker_interface}" -p tcp --dport 8080 -j ACCEPT
-iptables -A INPUT -i "${docker_interface}" -p tcp --sport 8080 -j ACCEPT
+iptables -A INPUT -i "${docker_interface}" -p tcp --dport "${WEBUI_PORT:-8080}" -j ACCEPT
+iptables -A INPUT -i "${docker_interface}" -p tcp --sport "${WEBUI_PORT:-8080}" -j ACCEPT
 
 # additional port list for scripts or container linking
 if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
@@ -167,13 +167,13 @@ iptables -A OUTPUT -o "${docker_interface}" -p $VPN_PROTOCOL --dport $VPN_PORT -
 # if iptable mangle is available (kernel module) then use mark
 if [[ $iptable_mangle_exit_code == 0 ]]; then
 	# accept output from qBittorrent webui port - used for external access
-	iptables -t mangle -A OUTPUT -p tcp --dport 8080 -j MARK --set-mark 1
-	iptables -t mangle -A OUTPUT -p tcp --sport 8080 -j MARK --set-mark 1
+	iptables -t mangle -A OUTPUT -p tcp --dport "${WEBUI_PORT:-8080}" -j MARK --set-mark 1
+	iptables -t mangle -A OUTPUT -p tcp --sport "${WEBUI_PORT:-8080}" -j MARK --set-mark 1
 fi
 
 # accept output from qBittorrent webui port - used for lan access
-iptables -A OUTPUT -o "${docker_interface}" -p tcp --dport 8080 -j ACCEPT
-iptables -A OUTPUT -o "${docker_interface}" -p tcp --sport 8080 -j ACCEPT
+iptables -A OUTPUT -o "${docker_interface}" -p tcp --dport "${WEBUI_PORT:-8080}" -j ACCEPT
+iptables -A OUTPUT -o "${docker_interface}" -p tcp --sport "${WEBUI_PORT:-8080}" -j ACCEPT
 
 # additional port list for scripts or container linking
 if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
