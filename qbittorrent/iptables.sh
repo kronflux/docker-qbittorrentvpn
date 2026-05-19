@@ -1,11 +1,18 @@
 #!/bin/bash
 # Wait until tunnel is up
+VPN_WAIT_TIMEOUT=${VPN_WAIT_TIMEOUT:-120}
+elapsed=0
 while : ; do
 	tunnelstat=$(netstat -ie | grep -E "tun|tap|wg")
 	if [[ ! -z "${tunnelstat}" ]]; then
 		break
 	else
 		sleep 1
+		elapsed=$((elapsed + 1))
+		if [[ $elapsed -ge $VPN_WAIT_TIMEOUT ]]; then
+			echo "[ERROR] VPN tunnel did not come up within ${VPN_WAIT_TIMEOUT} seconds, exiting..." | ts '%Y-%m-%d %H:%M:%.S'
+			exit 1
+		fi
 	fi
 done
 
@@ -95,7 +102,9 @@ fi
 iptables -P INPUT DROP
 
 # set policy to drop ipv6 for input
-ip6tables -P INPUT DROP 1>&- 2>&-
+if ! ip6tables -P INPUT DROP 2>/dev/null; then
+	echo "[WARNING] ip6tables unavailable, skipping IPv6 INPUT DROP policy" | ts '%Y-%m-%d %H:%M:%.S'
+fi
 
 # accept input to tunnel adapter
 iptables -A INPUT -i "${VPN_DEVICE_TYPE}" -j ACCEPT
@@ -142,7 +151,9 @@ iptables -A INPUT -i lo -j ACCEPT
 iptables -P OUTPUT DROP
 
 # set policy to drop ipv6 for output
-ip6tables -P OUTPUT DROP 1>&- 2>&-
+if ! ip6tables -P OUTPUT DROP 2>/dev/null; then
+	echo "[WARNING] ip6tables unavailable, skipping IPv6 OUTPUT DROP policy" | ts '%Y-%m-%d %H:%M:%.S'
+fi
 
 # accept output from tunnel adapter
 iptables -A OUTPUT -o "${VPN_DEVICE_TYPE}" -j ACCEPT
