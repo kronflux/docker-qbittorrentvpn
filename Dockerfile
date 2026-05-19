@@ -138,6 +138,7 @@ RUN echo "deb http://deb.debian.org/debian/ trixie non-free" > /etc/apt/sources.
     python3 \
     unrar \
     unzip \
+    wireguard-go \
     wireguard-tools \
     zip \
     && apt-get clean \
