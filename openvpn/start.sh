@@ -60,7 +60,7 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 
 	# Wildcard search for openvpn config files (match on first result)
 	if [[ "${VPN_TYPE}" == "openvpn" ]]; then
-		export VPN_CONFIG=$(find /config/openvpn -maxdepth 1 -name "*.ovpn" -print -quit)
+		export VPN_CONFIG=$(find /config/openvpn -maxdepth 1 \( -name "*.ovpn" -o -name "*.conf" \) -print -quit)
 	else
 		export VPN_CONFIG=$(find /config/wireguard -maxdepth 1 -name "*.conf" -print -quit)
 	fi
@@ -68,7 +68,7 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 	# If ovpn file not found in /config/openvpn or /config/wireguard then exit
 	if [[ -z "${VPN_CONFIG}" ]]; then
 		if [[ "${VPN_TYPE}" == "openvpn" ]]; then
-			echo "[ERROR] No OpenVPN config file found in /config/openvpn/. Please download one from your VPN provider and restart this container. Make sure the file extension is '.ovpn'" | ts '%Y-%m-%d %H:%M:%.S'
+			echo "[ERROR] No OpenVPN config file found in /config/openvpn/. Please download one from your VPN provider and restart this container. Make sure the file extension is '.ovpn' or '.conf'" | ts '%Y-%m-%d %H:%M:%.S'
 		else
 			echo "[ERROR] No WireGuard config file found in /config/wireguard/. Please download one from your VPN provider and restart this container. Make sure the file extension is '.conf'" | ts '%Y-%m-%d %H:%M:%.S'
 		fi
