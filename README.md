@@ -11,7 +11,7 @@ Docker container which runs the latest [qBittorrent](https://github.com/qbittorr
 ![alt text][preview]
 
 # Docker Features
-* Base: Debian bullseye-slim
+* Base: Debian trixie-slim
 * [qBittorrent](https://github.com/qbittorrent/qBittorrent) compiled from source
 * [libtorrent](https://github.com/arvidn/libtorrent) compiled from source
 * Compiled with the latest version of [Boost](https://www.boost.org/)
@@ -60,7 +60,6 @@ $ docker run  -d \
 |`HEALTH_CHECK_SILENT`| No |Set to `1` to supress the 'Network is up' message. Defaults to `1` if unset.|`HEALTH_CHECK_SILENT=1`|`1`|
 |`HEALTH_CHECK_AMOUNT`| No |The amount of pings that get send when checking for connection.|`HEALTH_CHECK_AMOUNT=10`|`1`|
 |`RESTART_CONTAINER`| No |Set to `no` to **disable** the automatic restart when the network is possibly down.|`RESTART_CONTAINER=yes`|`yes`|
-|`INSTALL_PYTHON3`| No |Set this to `yes` to let the container install Python3.|`INSTALL_PYTHON3=yes`|`no`|
 |`ADDITIONAL_PORTS`| No |Adding a comma delimited list of ports will allow these ports via the iptables script.|`ADDITIONAL_PORTS=1234,8112`||
 
 ## Volumes
