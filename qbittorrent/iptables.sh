@@ -1,7 +1,5 @@
 #!/bin/bash
-# Forked from binhex's OpenVPN dockers
 # Wait until tunnel is up
-
 while : ; do
 	tunnelstat=$(netstat -ie | grep -E "tun|tap|wg")
 	if [[ ! -z "${tunnelstat}" ]]; then

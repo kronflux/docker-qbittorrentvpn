@@ -1,5 +1,5 @@
 #!/bin/bash
-# Forked from binhex's OpenVPN dockers
+
 set -e
 
 # check for presence of network interface docker0
