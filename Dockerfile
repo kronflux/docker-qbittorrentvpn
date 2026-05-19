@@ -19,15 +19,18 @@ RUN apt update \
     unzip \
     zlib1g-dev
 
-# Build Boost (static)
+# Build Boost (static, selective libraries only)
 RUN BOOST_VERSION=$(curl -s https://archives.boost.io/release/ \
         | grep -E 'href="[0-9]+\.[0-9]+\.[0-9]+/' \
         | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
         | sort -V | tail -1) \
     && BOOST_VERSION_US=$(echo ${BOOST_VERSION} | tr '.' '_') \
-    && curl -o /opt/boost_${BOOST_VERSION_US}.tar.gz -L \
-        https://archives.boost.io/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_US}.tar.gz \
-    && tar -xzf /opt/boost_${BOOST_VERSION_US}.tar.gz -C /opt \
+    && BOOST_ARCHIVE="boost_${BOOST_VERSION_US}.tar.gz" \
+    && BOOST_BASE_URL="https://archives.boost.io/release/${BOOST_VERSION}/source" \
+    && curl -o /opt/${BOOST_ARCHIVE} -L ${BOOST_BASE_URL}/${BOOST_ARCHIVE} \
+    && BOOST_SHA256=$(curl -sL ${BOOST_BASE_URL}/${BOOST_ARCHIVE}.json | jq -r '.sha256') \
+    && echo "${BOOST_SHA256}  /opt/${BOOST_ARCHIVE}" | sha256sum -c - \
+    && tar -xzf /opt/${BOOST_ARCHIVE} -C /opt \
     && cd /opt/boost_${BOOST_VERSION_US} \
     && ./bootstrap.sh --prefix=/usr \
     && ./b2 link=static --prefix=/usr install \
@@ -48,11 +51,17 @@ RUN NINJA_ASSETS=$(curl -sX GET "https://api.github.com/repos/ninja-build/ninja/
 # Install cmake
 RUN CMAKE_ASSETS=$(curl -sX GET "https://api.github.com/repos/Kitware/CMake/releases" \
         | jq '.[] | select(.prerelease==false) | .assets_url' | head -n 1 | tr -d '"') \
-    && CMAKE_DOWNLOAD_URL=$(curl -sX GET ${CMAKE_ASSETS} \
-        | jq '.[] | select(.name | match("Linux-x86_64.sh";"i")) .browser_download_url' | tr -d '"') \
-    && curl -o /opt/cmake.sh -L ${CMAKE_DOWNLOAD_URL} \
-    && chmod +x /opt/cmake.sh \
-    && /bin/bash /opt/cmake.sh --skip-license --prefix=/usr \
+    && CMAKE_ASSETS_JSON=$(curl -sX GET ${CMAKE_ASSETS}) \
+    && CMAKE_INSTALLER=$(echo "${CMAKE_ASSETS_JSON}" \
+        | jq -r '.[] | select(.name | match("Linux-x86_64.sh";"i")) | .name') \
+    && CMAKE_DOWNLOAD_URL=$(echo "${CMAKE_ASSETS_JSON}" \
+        | jq -r '.[] | select(.name | match("Linux-x86_64.sh";"i")) | .browser_download_url') \
+    && CMAKE_SHA256_URL=$(echo "${CMAKE_ASSETS_JSON}" \
+        | jq -r '.[] | select(.name | endswith("-SHA-256.txt")) | .browser_download_url') \
+    && curl -o /opt/${CMAKE_INSTALLER} -L ${CMAKE_DOWNLOAD_URL} \
+    && cd /opt && curl -sL ${CMAKE_SHA256_URL} | grep "${CMAKE_INSTALLER}" | sha256sum -c - \
+    && chmod +x /opt/${CMAKE_INSTALLER} \
+    && /bin/bash /opt/${CMAKE_INSTALLER} --skip-license --prefix=/usr \
     && rm -rf /opt/*
 
 # Compile libtorrent-rasterbar
