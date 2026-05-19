@@ -120,6 +120,9 @@ RUN echo "deb http://deb.debian.org/debian/ trixie non-free" > /etc/apt/sources.
     && apt -y upgrade \
     && apt -y install --no-install-recommends \
     ca-certificates \
+    curl \
+    dos2unix \
+    geoip-database \
     inetutils-ping \
     ipcalc \
     iproute2 \
