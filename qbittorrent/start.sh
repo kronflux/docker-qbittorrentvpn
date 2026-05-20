@@ -68,6 +68,30 @@ else
 fi
 sed -i 's~^WebUI\\Port=.*~WebUI\\Port='"${WEBUI_PORT}"'~g' "${QBITTORRENT_CONF}"
 
+# Configure WebUI credentials. If WEBUI_PASSWORD is set, generate qBittorrent's
+# PBKDF2-SHA512 hash (random salt, 100k iterations, 64-byte output) and write it
+# to the config — overriding any existing password. Skip if unset, leaving any
+# user-configured password in place. WEBUI_USERNAME is only applied alongside a
+# password (otherwise the temporary password qBittorrent generates would be
+# tied to an unknown username).
+if [[ ! -z "${WEBUI_PASSWORD}" ]]; then
+	WEBUI_USERNAME="${WEBUI_USERNAME:-admin}"
+	echo "[INFO] WEBUI_PASSWORD is set; applying WEBUI_USERNAME='${WEBUI_USERNAME}' and PBKDF2 password hash to config" | ts '%Y-%m-%d %H:%M:%.S'
+	WEBUI_PASSWORD_HASH=$(python3 -c '
+import base64, hashlib, os, sys
+salt = os.urandom(16)
+key = hashlib.pbkdf2_hmac("sha512", sys.argv[1].encode(), salt, 100000, 64)
+print(f"@ByteArray({base64.b64encode(salt).decode()}:{base64.b64encode(key).decode()})")
+' "${WEBUI_PASSWORD}")
+	sed -i 's~^WebUI\\Username=.*~WebUI\\Username='"${WEBUI_USERNAME}"'~g' "${QBITTORRENT_CONF}"
+	if grep -q '^WebUI\\Password_PBKDF2=' "${QBITTORRENT_CONF}"; then
+		sed -i "s~^WebUI\\\\Password_PBKDF2=.*~WebUI\\\\Password_PBKDF2=${WEBUI_PASSWORD_HASH}~" "${QBITTORRENT_CONF}"
+	else
+		sed -i "/^WebUI\\\\Username=/a WebUI\\\\Password_PBKDF2=${WEBUI_PASSWORD_HASH}" "${QBITTORRENT_CONF}"
+	fi
+	unset WEBUI_PASSWORD_HASH
+fi
+
 # The mess down here checks if SSL is enabled.
 export ENABLE_SSL=$(echo "${ENABLE_SSL,,}")
 

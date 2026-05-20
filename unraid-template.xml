@@ -21,7 +21,7 @@
 &#xD;
 **Kernel modules:** Requires tun.ko on the host. If wireguard.ko is missing, the container falls back to userspace wireguard-go automatically.&#xD;
 &#xD;
-**Default WebUI credentials:** admin / adminadmin — change on first login.&#xD;
+**WebUI login:** Set `WebUI Password` below (recommended) and the container will apply it on startup as admin (or whatever you set `WebUI Username` to). If you leave it empty, qBittorrent generates a one-time random password on first launch — find it in /config/qBittorrent/data/logs/qbittorrent.log inside the container.&#xD;
 &#xD;
 **Ports:** 8080/tcp WebUI, 8999/tcp + 8999/udp BitTorrent listening.</Overview>
   <Category>Downloaders: Network:VPN:</Category>
@@ -49,6 +49,8 @@
   <Config Name="OpenVPN Password" Target="VPN_PASSWORD" Default="" Description="OpenVPN account password. Leave empty for WireGuard. Written to a tmpfs file at runtime — never persisted to /config." Type="Variable" Display="always" Required="false" Mask="true"/>
 
   <!-- WebUI / User -->
+  <Config Name="WebUI Username" Target="WEBUI_USERNAME" Default="admin" Description="qBittorrent WebUI login username. Only takes effect when WebUI Password is also set." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="WebUI Password" Target="WEBUI_PASSWORD" Default="" Description="qBittorrent WebUI login password. When set, the container hashes it with PBKDF2 and writes it into qBittorrent's config on every start. Leave empty to let qBittorrent generate a one-time random password on first launch (check qBittorrent's log file under /config/qBittorrent/data/logs/ for the value)." Type="Variable" Display="always" Required="false" Mask="true"/>
   <Config Name="PUID" Target="PUID" Default="99" Description="User ID applied to /config files and /downloads. Unraid default: 99 (nobody)." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="PGID" Target="PGID" Default="100" Description="Group ID applied to /config files and /downloads. Unraid default: 100 (users)." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="UMASK" Target="UMASK" Default="002" Description="Umask for files created by qBittorrent." Type="Variable" Display="always" Required="false" Mask="false"/>

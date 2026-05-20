@@ -63,6 +63,8 @@ $ docker run  -d \
 |`VPN_WAIT_TIMEOUT`| No |Seconds to wait for VPN tunnel to come up before exiting with an error.|`VPN_WAIT_TIMEOUT=120`|`120`|
 |`WEBUI_PORT`| No |Port for the qBittorrent WebUI. Must match the container port mapping.|`WEBUI_PORT=8080`|`8080`|
 |`ENABLE_UPNP`| No |Enable UPnP port mapping in qBittorrent. Disabled by default — UPnP is ineffective and potentially leaky behind a VPN.|`ENABLE_UPNP=yes`|`no`|
+|`WEBUI_USERNAME`| No | WebUI username. Only applied when `WEBUI_PASSWORD` is also set. |`WEBUI_USERNAME=admin`|`admin`|
+|`WEBUI_PASSWORD`| No | WebUI password in plain text. When set, the container hashes it with PBKDF2-SHA512 and writes it into qBittorrent's config on every start, overriding any existing password. Useful for initial provisioning or password recovery. Leave unset to let qBittorrent generate a one-time password on first launch (logged to `/config/qBittorrent/data/logs/qbittorrent.log`).|`WEBUI_PASSWORD=changeme`||
 |`ADDITIONAL_PORTS`| No |Adding a comma delimited list of ports will allow these ports via the iptables script.|`ADDITIONAL_PORTS=1234,8112`||
 |`SKIP_CHOWN_DOWNLOADS`| No | Skips taking ownership(chown) of the downloads path at startup.|`SKIP_CHOWN_DOWNLOADS="yes"`|`no`|
 
@@ -82,12 +84,21 @@ $ docker run  -d \
 # Access the WebUI
 Access https://IPADDRESS:PORT from a browser on the same network. (for example: https://192.168.0.90:8080)
 
-## Default Credentials
+## WebUI Credentials
 
-| Credential | Default Value |
-|----------|----------|
-|`username`| `admin` |
-|`password`| `adminadmin` |
+Starting with qBittorrent 4.6, the hardcoded `admin`/`adminadmin` default was removed. There are now two ways to log in on first launch:
+
+**Option 1 — Set a password via environment variable (recommended for automated setups):**
+Set `WEBUI_PASSWORD` (and optionally `WEBUI_USERNAME`, defaults to `admin`). The container hashes it with PBKDF2-SHA512 and writes it into qBittorrent's config on startup. Re-applied on every restart, so changing the env var changes the password.
+
+**Option 2 — Use the auto-generated temporary password:**
+Leave `WEBUI_PASSWORD` unset. On first launch qBittorrent generates a random temporary password and writes it to its own log. Find it with:
+
+```
+docker exec <container> grep -i "temporary password" /config/qBittorrent/data/logs/qbittorrent.log
+```
+
+Username is `admin`. After logging in, set a permanent password via **Tools → Options → Web UI → Authentication**.
 
 # How to use WireGuard 
 The container will fail to boot if `VPN_ENABLED` is set and there is no valid .conf file present in the /config/wireguard directory. Drop a .conf file from your VPN provider into /config/wireguard and start the container again. The file must have the name `wg0.conf`, or it will fail to start.
