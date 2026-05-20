@@ -59,6 +59,7 @@ $ docker run  -d \
 |`HEALTH_CHECK_INTERVAL`| No |This is the time in seconds that the container waits to see if the internet connection still works (check if VPN died)|`HEALTH_CHECK_INTERVAL=300`|`60`|
 |`HEALTH_CHECK_SILENT`| No |Set to `1` to supress the 'Network is up' message. Defaults to `1` if unset.|`HEALTH_CHECK_SILENT=1`|`1`|
 |`HEALTH_CHECK_AMOUNT`| No |The amount of pings that get send when checking for connection.|`HEALTH_CHECK_AMOUNT=10`|`1`|
+|`HEALTH_CHECK_FAILURE_THRESHOLD`| No |Number of *consecutive* failed health checks before the container restarts. Prevents a single transient packet loss event from killing the container. Reset to 0 on any successful check.|`HEALTH_CHECK_FAILURE_THRESHOLD=5`|`3`|
 |`RESTART_CONTAINER`| No |Set to `no` to **disable** the automatic restart when the network is possibly down.|`RESTART_CONTAINER=yes`|`yes`|
 |`VPN_WAIT_TIMEOUT`| No |Seconds to wait for VPN tunnel to come up before exiting with an error.|`VPN_WAIT_TIMEOUT=120`|`120`|
 |`WEBUI_PORT`| No |Port for the qBittorrent WebUI. Must match the container port mapping.|`WEBUI_PORT=8080`|`8080`|

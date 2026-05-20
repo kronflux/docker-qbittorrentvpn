@@ -232,6 +232,13 @@ if [ -e /proc/$qbittorrentpid ]; then
 	fi
 	echo "[INFO] HEALTH_CHECK_AMOUNT is set to ${HEALTH_CHECK_AMOUNT}" | ts '%Y-%m-%d %H:%M:%.S'
 
+	# Number of consecutive failed health checks before declaring the network down.
+	# A single dropped ping (transient packet loss, brief VPN routing flap, DNS
+	# blip) is not enough on its own — restart only after sustained failure.
+	FAILURE_THRESHOLD=${HEALTH_CHECK_FAILURE_THRESHOLD:-3}
+	FAILURE_COUNT=0
+	echo "[INFO] HEALTH_CHECK_FAILURE_THRESHOLD is set to ${FAILURE_THRESHOLD}" | ts '%Y-%m-%d %H:%M:%.S'
+
 	while true; do
 		# Confirm the process is still running, start it back up if it's not.
 		if ! ps -p $qbittorrentpid > /dev/null; then
@@ -244,15 +251,23 @@ if [ -e /proc/$qbittorrentpid ]; then
 		ping -c ${HEALTH_CHECK_AMOUNT} $HOST > /dev/null 2>&1
 		STATUS=$?
 		if [[ "${STATUS}" -ne 0 ]]; then
-			echo "[ERROR] Network is possibly down." | ts '%Y-%m-%d %H:%M:%.S'
-			sleep 1
-			if [[ ${RESTART_CONTAINER,,} == "1" || ${RESTART_CONTAINER,,} == "true" || ${RESTART_CONTAINER,,} == "yes" ]]; then
-				echo "[INFO] Restarting container." | ts '%Y-%m-%d %H:%M:%.S'
-				exit 1
+			FAILURE_COUNT=$((FAILURE_COUNT + 1))
+			echo "[WARNING] Health check ping to ${HOST} failed (${FAILURE_COUNT}/${FAILURE_THRESHOLD})" | ts '%Y-%m-%d %H:%M:%.S'
+			if [[ $FAILURE_COUNT -ge $FAILURE_THRESHOLD ]]; then
+				echo "[ERROR] ${FAILURE_COUNT} consecutive health check failures — network is down." | ts '%Y-%m-%d %H:%M:%.S'
+				if [[ ${RESTART_CONTAINER,,} == "1" || ${RESTART_CONTAINER,,} == "true" || ${RESTART_CONTAINER,,} == "yes" ]]; then
+					echo "[INFO] Restarting container." | ts '%Y-%m-%d %H:%M:%.S'
+					exit 1
+				fi
 			fi
-		fi
-		if [[ ${HEALTH_CHECK_SILENT,,} == "0" || ${HEALTH_CHECK_SILENT,,} == "false" || ${HEALTH_CHECK_SILENT,,} == "no" ]]; then
-			echo "[INFO] Network is up" | ts '%Y-%m-%d %H:%M:%.S'
+		else
+			if [[ $FAILURE_COUNT -gt 0 ]]; then
+				echo "[INFO] Network recovered after ${FAILURE_COUNT} failed health check(s)." | ts '%Y-%m-%d %H:%M:%.S'
+				FAILURE_COUNT=0
+			fi
+			if [[ ${HEALTH_CHECK_SILENT,,} == "0" || ${HEALTH_CHECK_SILENT,,} == "false" || ${HEALTH_CHECK_SILENT,,} == "no" ]]; then
+				echo "[INFO] Network is up" | ts '%Y-%m-%d %H:%M:%.S'
+			fi
 		fi
 		sleep ${INTERVAL} &
 		# combine sleep background with wait so that the TERM trap above works
