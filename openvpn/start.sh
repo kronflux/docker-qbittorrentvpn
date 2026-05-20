@@ -60,7 +60,7 @@ if [[ $VPN_ENABLED == "1" || $VPN_ENABLED == "true" || $VPN_ENABLED == "yes" ]];
 
 	# Wildcard search for openvpn config files (match on first result)
 	if [[ "${VPN_TYPE}" == "openvpn" ]]; then
-		export VPN_CONFIG=$(find /config/openvpn -maxdepth 1 \( -name "*.ovpn" -o -name "*.conf" \) -print -quit)
+		export VPN_CONFIG=$(find /config/openvpn -maxdepth 1 \( -name "*.ovpn" -o -name "*.conf" \) -not -name "credentials.conf" -print -quit)
 	else
 		export VPN_CONFIG=$(find /config/wireguard -maxdepth 1 -name "*.conf" -print -quit)
 	fi
