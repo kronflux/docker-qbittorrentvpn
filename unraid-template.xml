@@ -49,7 +49,6 @@
   <Config Name="OpenVPN Password" Target="VPN_PASSWORD" Default="" Description="OpenVPN account password. Leave empty for WireGuard. Written to a tmpfs file at runtime — never persisted to /config." Type="Variable" Display="always" Required="false" Mask="true"/>
 
   <!-- WebUI / User -->
-  <Config Name="WebUI Port" Target="WEBUI_PORT" Default="8080" Description="Port qBittorrent's WebUI listens on inside the container. Must match the port mapping below." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="PUID" Target="PUID" Default="99" Description="User ID applied to /config files and /downloads. Unraid default: 99 (nobody)." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="PGID" Target="PGID" Default="100" Description="Group ID applied to /config files and /downloads. Unraid default: 100 (users)." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="UMASK" Target="UMASK" Default="002" Description="Umask for files created by qBittorrent." Type="Variable" Display="always" Required="false" Mask="false"/>
@@ -63,6 +62,7 @@
   <Config Name="VPN Wait Timeout" Target="VPN_WAIT_TIMEOUT" Default="120" Description="Seconds to wait for the VPN tunnel interface to appear before giving up and exiting." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 
   <!-- Advanced options -->
+  <Config Name="WebUI Listen Port (internal)" Target="WEBUI_PORT" Default="8080" Description="Port qBittorrent's WebUI listens on INSIDE the container. Leave at 8080 unless you have a specific reason to change it. If you change this, you MUST also change the 'Container Port' of the 'WebUI Port' port mapping below to the same value — otherwise the host port forwards to nothing." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Enable UPnP" Target="ENABLE_UPNP" Default="no" Description="UPnP port mapping in qBittorrent. Disabled by default — UPnP is ineffective behind a VPN and can leak." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Enable SSL" Target="ENABLE_SSL" Default="ignore" Description="WebUI SSL handling: 'yes' generates a self-signed cert and enables HTTPS; 'no' strips SSL config; 'ignore' leaves your settings alone." Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Name Servers" Target="NAME_SERVERS" Default="1.1.1.1,8.8.8.8,1.0.0.1,8.8.4.4" Description="Comma-separated DNS servers. OpenVPN only — WireGuard uses the DNS= line in wg0.conf and ignores this." Type="Variable" Display="advanced" Required="false" Mask="false"/>
@@ -71,7 +71,7 @@
   <Config Name="Skip chown on /downloads" Target="SKIP_CHOWN_DOWNLOADS" Default="no" Description="Set 'yes' to skip the recursive chown on /downloads at startup. Useful for large libraries where the chown adds minutes to startup." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 
   <!-- Port Mappings -->
-  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="qBittorrent WebUI port. Must match the WebUI Port variable above." Type="Port" Display="always" Required="true" Mask="false"/>
+  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp" Description="WebUI port. The HOST PORT (left field) is what you'll use in your browser. The CONTAINER PORT (right field) must match the 'WebUI Listen Port' variable in advanced settings — if you didn't change that variable, leave the container port at 8080." Type="Port" Display="always" Required="true" Mask="false"/>
   <Config Name="BitTorrent Port (TCP)" Target="8999" Default="8999" Mode="tcp" Description="qBittorrent peer listening port (TCP)." Type="Port" Display="always" Required="true" Mask="false"/>
   <Config Name="BitTorrent Port (UDP)" Target="8999" Default="8999" Mode="udp" Description="qBittorrent peer listening port (UDP) — used by DHT, uTP, and UDP trackers." Type="Port" Display="always" Required="true" Mask="false"/>
 </Container>
